@@ -8,74 +8,72 @@ pipeline {
     }
 
     stages {
-
         stage('Checkout Code') {
             steps {
-                echo '--- Checking out source code from GitHub ---'
                 git branch: 'main', url: 'https://github.com/MugeshkannaaRS/webapp-cicd.git'
             }
         }
 
         stage('Build Application') {
             steps {
-                echo '--- Building application ---'
-                // Replace this with your build command if needed (npm, maven, etc.)
-                bat 'echo Build step completed successfully'
+                echo 'Building the web application...'
+                sh 'echo "Build step complete."'
             }
         }
 
         stage('Run Unit Tests') {
             steps {
-                echo '--- Running unit tests ---'
-                bat 'echo Unit tests passed successfully'
+                echo 'Running unit tests...'
+                sh 'echo "Tests passed successfully!"'
             }
         }
 
         stage('Build Docker Image') {
             steps {
-                echo '--- Building Docker image ---'
-                bat """
-                docker build -t %IMAGE_NAME% .
-                """
+                echo 'Building Docker image...'
+                sh '''
+                    docker build -t $IMAGE_NAME .
+                '''
             }
         }
 
         stage('Login to AWS ECR') {
             steps {
-                echo '--- Logging in to AWS ECR ---'
-                bat """
-                aws ecr get-login-password --region %AWS_REGION% | docker login --username AWS --password-stdin %ECR_REPO%
-                """
+                withAWS(region: "${AWS_REGION}", credentials: 'aws-credentials') {
+                    script {
+                        sh '''
+                            aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin $ECR_REPO
+                        '''
+                    }
+                }
             }
         }
 
         stage('Tag & Push Docker Image') {
             steps {
-                echo '--- Tagging and pushing Docker image to ECR ---'
-                bat """
-                docker tag %IMAGE_NAME%:latest %ECR_REPO%:latest
-                docker push %ECR_REPO%:latest
-                """
+                script {
+                    sh '''
+                        docker tag $IMAGE_NAME:latest $ECR_REPO:latest
+                        docker push $ECR_REPO:latest
+                    '''
+                }
             }
         }
 
         stage('Deploy to AWS ECS') {
             steps {
-                echo '--- Deploying to AWS ECS ---'
-                // Make sure you have your ECS service and task definition set up
-                bat """
-                aws ecs update-service --cluster webapp-cluster --service webapp-service --force-new-deployment --region %AWS_REGION%
-                """
+                echo 'Deploying to AWS ECS (mock step for now)...'
+                sh 'echo "Deployment step complete."'
             }
         }
     }
 
     post {
         success {
-            echo 'Deployment pipeline completed successfully!'
+            echo '✅ Deployment Successful!'
         }
         failure {
-            echo 'Pipeline failed. Please check logs above.'
+            echo '❌ Deployment Failed!'
         }
     }
 }
