@@ -2,61 +2,64 @@ pipeline {
     agent any
 
     environment {
-        AWS_REGION = "us-east-1"
-        ECR_REPO = "108322181673.dkr.ecr.us-east-1.amazonaws.com/webapp-cicd"
+        AWS_DEFAULT_REGION = 'ap-south-1'
+        AWS_ACCOUNT_ID = '108322181673'
+        IMAGE_REPO_NAME = 'webapp-cicd'
+        IMAGE_TAG = 'latest'
     }
 
     stages {
         stage('Checkout Code') {
             steps {
-                git 'https://github.com/MugeshkannaaRS/webapp-cicd.git'
+                git branch: 'main', url: 'https://github.com/MugeshkannaaRS/webapp-cicd.git'
             }
         }
 
         stage('Build Application') {
             steps {
-                echo 'Building the web application...'
-                bat 'echo Build complete'
+                echo 'Building application...'
+                sh 'npm install'
             }
         }
 
         stage('Run Unit Tests') {
             steps {
                 echo 'Running tests...'
-                bat 'echo Tests successful'
+                sh 'npm test || echo "No tests found"'
             }
         }
 
         stage('Build Docker Image') {
             steps {
-                echo 'Building Docker image...'
-                bat 'docker build -t myapp:latest .'
+                script {
+                    sh "docker build -t ${IMAGE_REPO_NAME}:${IMAGE_TAG} ."
+                }
             }
         }
 
         stage('Login to AWS ECR') {
             steps {
-                echo 'Logging in to AWS ECR...'
-                bat """
-                aws ecr get-login-password --region %AWS_REGION% | docker login --username AWS --password-stdin 108322181673.dkr.ecr.us-east-1.amazonaws.com
-                """
+                script {
+                    sh "aws ecr get-login-password --region ${AWS_DEFAULT_REGION} | docker login --username AWS --password-stdin ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_DEFAULT_REGION}.amazonaws.com"
+                }
             }
         }
 
         stage('Tag & Push Docker Image') {
             steps {
-                echo 'Tagging and pushing Docker image...'
-                bat """
-                docker tag myapp:latest %ECR_REPO%:latest
-                docker push %ECR_REPO%:latest
-                """
+                script {
+                    sh """
+                    docker tag ${IMAGE_REPO_NAME}:${IMAGE_TAG} ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_DEFAULT_REGION}.amazonaws.com/${IMAGE_REPO_NAME}:${IMAGE_TAG}
+                    docker push ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_DEFAULT_REGION}.amazonaws.com/${IMAGE_REPO_NAME}:${IMAGE_TAG}
+                    """
+                }
             }
         }
 
         stage('Deploy to AWS ECS') {
             steps {
-                echo 'Deploying to ECS...'
-                bat 'echo Deployment complete'
+                echo 'Deploying application to ECS...'
+                // add ECS deployment command here (if using ECS CLI or AWS CLI)
             }
         }
     }
