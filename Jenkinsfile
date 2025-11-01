@@ -1,10 +1,15 @@
 pipeline {
     agent any
 
+    environment {
+        AWS_REGION = "us-east-1"
+        ECR_REPO = "108322181673.dkr.ecr.us-east-1.amazonaws.com/webapp-cicd"
+    }
+
     stages {
         stage('Checkout Code') {
             steps {
-                git branch: 'main', url: 'https://github.com/MugeshkannaaRS/webapp-cicd.git'
+                git 'https://github.com/MugeshkannaaRS/webapp-cicd.git'
             }
         }
 
@@ -32,18 +37,19 @@ pipeline {
         stage('Login to AWS ECR') {
             steps {
                 echo 'Logging in to AWS ECR...'
-                // Replace with your actual ECR login if configured
-                bat 'echo Logged into AWS ECR'
+                bat """
+                aws ecr get-login-password --region %AWS_REGION% | docker login --username AWS --password-stdin 108322181673.dkr.ecr.us-east-1.amazonaws.com
+                """
             }
         }
 
         stage('Tag & Push Docker Image') {
             steps {
                 echo 'Tagging and pushing Docker image...'
-                bat '''
-                echo Tagging image
-                echo Pushing image to ECR
-                '''
+                bat """
+                docker tag myapp:latest %ECR_REPO%:latest
+                docker push %ECR_REPO%:latest
+                """
             }
         }
 
