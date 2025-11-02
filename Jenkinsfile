@@ -34,14 +34,18 @@ pipeline {
                 bat 'docker build -t webapp-cicd:latest .'
             }
         }
-
+        
         stage('Login to AWS ECR') {
             steps {
+                withAWS(credentials: 'aws-creds', region: 'ap-south-1') {
                 bat '''
-                for /f "usebackq tokens=*" %%i in (`aws ecr get-login-password --region ap-south-1`) do docker login --username AWS --password %%i 108322181673.dkr.ecr.ap-south-1.amazonaws.com
+                aws ecr get-login-password --region ap-south-1 ^
+                | docker login --username AWS --password-stdin 108322181673.dkr.ecr.ap-south-1.amazonaws.com
                 '''
+                }
             }
         }
+
 
         stage('Tag & Push Docker Image') {
             steps {
