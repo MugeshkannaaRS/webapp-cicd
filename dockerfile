@@ -1,19 +1,19 @@
-# Use an official Node.js image
-FROM node:18
+# Use official Node.js image
+FROM node:18-alpine
 
-# Set working directory inside container
+# Set working directory
 WORKDIR /app
 
-# Copy package files first
+# Copy package files first (for efficient caching)
 COPY package*.json ./
 
 # Install dependencies
 RUN npm install
 
-# Copy the rest of your application files
+# Copy all source code
 COPY . .
 
-# Expose port (adjust if your app uses a different one)
+# Expose port (adjust if your app runs elsewhere)
 EXPOSE 3000
 
 # Start the app
