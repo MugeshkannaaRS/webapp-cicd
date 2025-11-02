@@ -18,58 +18,53 @@ pipeline {
         stage('Build Application') {
             steps {
                 echo 'Building application...'
-                sh 'npm install'
+                bat 'npm install'
             }
         }
 
         stage('Run Unit Tests') {
             steps {
                 echo 'Running tests...'
-                sh 'npm test || echo "No tests found"'
+                bat 'npm test || echo No tests found'
             }
         }
 
         stage('Build Docker Image') {
             steps {
-                script {
-                    sh "docker build -t ${IMAGE_REPO_NAME}:${IMAGE_TAG} ."
-                }
+                bat 'docker build -t webapp-cicd:latest .'
             }
         }
 
         stage('Login to AWS ECR') {
             steps {
-                script {
-                    sh "aws ecr get-login-password --region ${AWS_DEFAULT_REGION} | docker login --username AWS --password-stdin ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_DEFAULT_REGION}.amazonaws.com"
-                }
+                bat '''
+                for /f "usebackq tokens=*" %%i in (`aws ecr get-login-password --region ap-south-1`) do docker login --username AWS --password %%i 108322181673.dkr.ecr.ap-south-1.amazonaws.com
+                '''
             }
         }
 
         stage('Tag & Push Docker Image') {
             steps {
-                script {
-                    sh """
-                    docker tag ${IMAGE_REPO_NAME}:${IMAGE_TAG} ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_DEFAULT_REGION}.amazonaws.com/${IMAGE_REPO_NAME}:${IMAGE_TAG}
-                    docker push ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_DEFAULT_REGION}.amazonaws.com/${IMAGE_REPO_NAME}:${IMAGE_TAG}
-                    """
-                }
+                bat '''
+                docker tag webapp-cicd:latest 108322181673.dkr.ecr.ap-south-1.amazonaws.com/webapp-cicd:latest
+                docker push 108322181673.dkr.ecr.ap-south-1.amazonaws.com/webapp-cicd:latest
+                '''
             }
         }
 
         stage('Deploy to AWS ECS') {
             steps {
-                echo 'Deploying application to ECS...'
-                // add ECS deployment command here (if using ECS CLI or AWS CLI)
+                echo 'Deploying to ECS (manual or via AWS CLI)'
             }
         }
     }
 
     post {
         success {
-            echo '✅ Deployment Successful!'
+            echo 'Deployment Successful!'
         }
         failure {
-            echo '❌ Deployment Failed!'
+            echo 'Deployment Failed!'
         }
     }
 }
